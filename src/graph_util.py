@@ -20,3 +20,16 @@ class graph:
                 res += f"|{self.graph[i][j]}| "
             res += "\n"
         return res
+
+class search:
+    @staticmethod
+    def get_random_graph():
+        return graph(10)
+
+    @staticmethod
+    def forward_a(graph, initial, goal):
+        pass
+
+    @staticmethod
+    def backward_a(graph, initial, goal):
+        pass
