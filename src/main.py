@@ -1,6 +1,9 @@
-from graph_util import graph, cell, search
+from graph_util import Graph, Cell, Search
+import sys, time
 
-s = search()
+# main file
+sys.setrecursionlimit(12000)
 
-# main file where the other classes will be called
-g1 = s.get_random_graph(dim=10)
+if __name__ == "__main__":
+    s = Search()
+    test_graphs = s.get_testing_graphs(count=50)
