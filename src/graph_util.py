@@ -21,7 +21,8 @@ class Cell:
         return self.__blocked
 
 class Graph:
-    def __init__(self, len: int):
+    def __init__(self, label: int, len: int):
+        self.label = label
         self.__len = len
         self.__graph = []
         for i in range(len):
@@ -49,11 +50,14 @@ class Graph:
     def get_dim(self):
         return len(self.__graph)
     
+    def get_label(self):
+        return self.label
+
     def set_cell_status(self, cell: tuple, status: bool):
         row, col = cell[0], cell[1]
         self.__graph[row][col].set_blocked(status)
 
-class Search:
+class Maze:
     def __init__(self):
         pass
 
@@ -94,7 +98,7 @@ class Search:
     # returns a randomly initialized graph with the passed in label
     def generate_graph(self, label: int, **kwargs):
         dim = kwargs.get("dim", TEST_GRAPH_DIM)
-        g = Graph(dim)
+        g = Graph(label, dim)
 
         start_t = time.perf_counter()
 
@@ -118,7 +122,7 @@ class Search:
             available_cells = list(set(available_cells) - visited)
 
         end_t = time.perf_counter()
-        return label, g, end_t - start_t
+        return g, end_t - start_t
 
     def get_testing_graphs(self, *, count: int):
         graphs = []
@@ -127,17 +131,11 @@ class Search:
         with Pool(processes=10) as pool:
             results = pool.imap_unordered(self.generate_graph, range(1, count+1))
 
-            for label, g, duration in results:
+            for g, duration in results:
                 graphs.append(g)
-                print(f"{label} completed in {duration} seconds")
+                print(f"{g.get_label()} completed in {duration} seconds")
         
         end_t = time.perf_counter()
         time_taken = end_t - start_t
         print(f"All graphs generated\nTotal time taken: {time_taken}")
         return graphs
-
-    def forward_a(self, graph, initial, goal):
-        pass
-
-    def backward_a(self, graph, initial, goal):
-        pass
