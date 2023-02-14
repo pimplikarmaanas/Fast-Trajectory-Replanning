@@ -128,7 +128,7 @@ class Maze:
         graphs = []
         start_t = time.perf_counter()
 
-        with Pool(processes=10) as pool:
+        with Pool() as pool:
             results = pool.imap_unordered(self.generate_graph, range(1, count+1))
 
             for g, duration in results:
