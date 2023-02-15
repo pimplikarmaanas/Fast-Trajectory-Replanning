@@ -4,142 +4,124 @@ from graph_util import *
 import heapq
 import time
 
-class Wrapper:
-    def __init__(self, cord: tuple, g: int, f: int):
-        self.__total_cost = g
-        self.__cord = cord
-        self.__f = f
-        self.__parent = None
-
-    def get_cord(self):
-        return self.__cord
-
-    def get_f(self):
-        return self.__f
-
-    def get_g(self):
-        return self.__total_cost
-
-    def get_parent(self):
-        return self.__parent
-
-    def set_parent(self, parent):
-        self.__parent = parent
-
-    def __hash__(self):
-        return hash(self.__cord)
-
-    def __lt__(self, other):
-        return self.__f < other.get_f()
-
-    def __eq__(self, other):
-        return self.__cord == other.__cord
+ADAPTIVE_HEURISTIC_DICT = "adaptive_h"
+SEARCH_SUCCESSFUL, SEARCH_FAILED = 1, 0
 
 class Search:
     def __init__(self):
         pass
 
-    def __get_neighbors(self, maze: Graph, cell: tuple):
-        x, y, res = cell[0], cell[1], []
+    def __get_neighbors(self, g: Graph, c: Cell):
+        x, y, res = c.position[0], c.position[1], []
         # left
-        if x-1 >= 0 and (x-1, y):
-            res.append((x-1, y))
+        if x-1 >= 0:
+            res.append(g.get_cell((x-1, y)))
         # right
-        if x+1 < maze.get_dim():
-            res.append((x+1, y))
+        if x+1 < g.get_dim():
+            res.append(g.get_cell((x+1, y)))
         # down
-        if y+1 < maze.get_dim():
-            res.append((x, y+1))
+        if y+1 < g.get_dim():
+            res.append(g.get_cell((x, y+1)))
         # up
         if y-1 >= 0:
-            res.append((x, y-1))
+            res.append(g.get_cell((x, y-1)))
 
         return res
 
-    def __heuristic(self, added_costs: dict, start: tuple, end: tuple):
+    def __heuristic(self, start: Cell, end: Cell, **kwargs):
+        adaptive_h = kwargs.get(ADAPTIVE_HEURISTIC_DICT, None)
+        if adaptive_h:
+            return adaptive_h[start]
+
         # manhattan distance
-        x1, y1 = start[0], start[1]
-        x2, y2 = end[0], end[1]
+        x1, y1 = start.position[0], start.position[1]
+        x2, y2 = end.position[0], end.position[1]
 
-        return abs(x1-x2) + abs(y1-y2) + added_costs[start] + added_costs[end]
+        return abs(x1-x2) + abs(y1-y2)
 
-    def __compute_f(self, added_costs: dict, g: int, cur: tuple, goal: tuple):
-        return (g + 1), (g + 1) + self.__heuristic(added_costs, cur, goal)
+    def __compute_f(self, cur: Cell, goal: Cell, **kwargs):
+        adaptive_h = kwargs.get(ADAPTIVE_HEURISTIC_DICT, None)
+        if adaptive_h:
+            cur.set_h(self.__heuristic(cur, goal, ADAPTIVE_HEURISTIC_DICT=adaptive_h))
+            return cur.get_g() + cur.get_h()
 
-    def A_star(self, maze: Graph, added_costs: dict, start: tuple, goal: tuple, known_blocks: set):
+        cur.set_h(self.__heuristic(cur, goal))
+        return cur.get_g() + cur.get_h()
+
+    def A_star(self, maze: Graph, start_t: tuple, goal_t: tuple, known_blocks: set, **kwargs):
+        start, goal = Cell(position=start_t), Cell(position=goal_t)
+        adaptive_h = kwargs.get(ADAPTIVE_HEURISTIC_DICT, None)
+
         # start and goal are tuples (i, j)
-        open_list, closed_list = [Wrapper(start, 0, 0)], known_blocks.copy()
+        open_list, closed_list = [start], known_blocks.copy()
         expanded_nodes = 0
 
         while open_list:
             expanded_nodes += 1
             cur_node = heapq.heappop(open_list)
-
-            closed_list.add(cur_node.get_cord())
+            closed_list.add(cur_node)
 
             # terminating condition
-            if cur_node.get_cord() == goal:
+            if cur_node == goal:
                 path = []
 
                 while cur_node:
-                    path.append(cur_node.get_cord())
+                    path.append(cur_node)
                     cur_node = cur_node.get_parent()
 
                 # backtrack
-                return path[::-1], expanded_nodes
+                return SEARCH_SUCCESSFUL, path[::-1], expanded_nodes
 
-            neighbors = self.__get_neighbors(maze, cur_node.get_cord())
+            neighbors = self.__get_neighbors(maze, cur_node)
 
             for child in neighbors:
-                child_g, child_f = self.__compute_f(added_costs, cur_node.get_g(), child, goal)
-
-                child_wrapper = Wrapper(child, child_g, child_f)
-                child_wrapper.set_parent(cur_node)
+                child.set_g(cur_node.get_g() + 1)
+                if adaptive_h:
+                    child.set_f(self.__compute_f(child, goal, ADAPTIVE_HEURISTIC_DICT=adaptive_h))
+                else:
+                    child.set_f(self.__compute_f(child, goal))
 
                 if child in closed_list:
                     continue
 
-                if child_wrapper in open_list:
-                    index = open_list.index(child_wrapper)
-                    if child_wrapper.get_f() < open_list[index].get_f():
+                child.set_parent(cur_node)
+
+                if child in open_list:
+                    index = open_list.index(child)
+                    if child < open_list[index]:
                         open_list.pop(index)
                     else:
                         continue
 
-                heapq.heappush(open_list, child_wrapper)
+                heapq.heappush(open_list, child)
 
-        return None, 0
+        return SEARCH_FAILED, None, 0
 
-    def repeated_A_star(self, maze: Graph, start: tuple, goal: tuple):
-        start_t = time.perf_counter()
+    def repeated_A_star(self, maze: Graph, start_t: tuple, goal_t: tuple):
+        start, goal = Cell(position=start_t), Cell(position=goal_t)
 
         cur = start
-        path_taken = []
+        path_taken = [start]
         known_blocks = set()
         expanded_nodes = 0
 
         while cur != goal:
-            # print("Known blocks: ", known_blocks)
-            path, cur_expanded = self.A_star(maze, defaultdict(int), cur, goal, known_blocks)
-            expanded_nodes += cur_expanded
-            # print(f"currently on {cur}, projected path: {path}")
+            status, path, cur_expanded = self.A_star(maze, cur.position, goal_t, known_blocks)
+            if status == SEARCH_FAILED:
+                return None, None
 
-            if not path:
-                return None, None, None
+            expanded_nodes += cur_expanded
 
             i = 1
-            while i < len(path) and not maze[path[i]].is_blocked():
-                known_blocks.add(cur)
+            while i < len(path) and not path[i].is_blocked():
                 cur = path[i]
                 path_taken.append(cur)
                 i += 1
 
-            if i < len(path) and maze[path[i]].is_blocked():
-                # print(f"Added {path[i]} to the known blocks")
+            if i < len(path) and path[i].is_blocked():
                 known_blocks.add(path[i])
 
-        end_t = time.perf_counter()
-        return path_taken, expanded_nodes, end_t - start_t
+        return path_taken, expanded_nodes
 
     def adaptive_A_star(self, maze: Graph, start: tuple, goal: tuple):
         additional_costs = defaultdict(int)
@@ -151,27 +133,25 @@ class Search:
         expanded_nodes = 0
 
         while cur != goal:
-            # print("Known blocks: ", known_blocks)
             path, cur_expanded = self.A_star(maze, additional_costs, cur, goal, known_blocks)
+            s_path, _ = self.A_star(maze, defaultdict(int), start, goal, known_blocks)
             if not path:
-                print("Path taken so far: ", path_taken)
                 return None, None, None
 
-            for node_t in path:
-                additional_costs[node_t] -= 1
+            for i, node_t in enumerate(path[:-1]):
+                g_s_goal = len(s_path)
+                new_h = g_s_goal - len(path)
+                additional_costs[node_t] = new_h
 
             expanded_nodes += cur_expanded
-            # print(f"currently on {cur}, projected path: {path}")
 
             i = 1
             while i < len(path) and not maze[path[i]].is_blocked():
-                known_blocks.add(cur)
                 cur = path[i]
                 path_taken.append(cur)
                 i += 1
 
             if i < len(path) and maze[path[i]].is_blocked():
-                # print(f"Added {path[i]} to the known blocks")
                 known_blocks.add(path[i])
 
         end_t = time.perf_counter()
