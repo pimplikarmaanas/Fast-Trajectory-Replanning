@@ -98,7 +98,7 @@ class Search:
         return SEARCH_FAILED, None, 0
 
     def repeated_A_star(self, maze: Graph, start_t: tuple, goal_t: tuple):
-        start, goal = Cell(position=start_t), Cell(position=goal_t)
+        start, goal = maze[start_t], maze[goal_t]
 
         cur = start
         path_taken = [start]
@@ -123,36 +123,34 @@ class Search:
 
         return path_taken, expanded_nodes
 
-    def adaptive_A_star(self, maze: Graph, start: tuple, goal: tuple):
-        additional_costs = defaultdict(int)
-        start_t = time.perf_counter()
+    def adaptive_A_star(self, maze: Graph, start_t: tuple, goal_t: tuple):
+        adaptive_dict = defaultdict(int)
+        start, goal = maze[start_t], maze[goal_t]
 
         cur = start
-        path_taken = []
+        path_taken = [start]
         known_blocks = set()
         expanded_nodes = 0
 
         while cur != goal:
-            path, cur_expanded = self.A_star(maze, additional_costs, cur, goal, known_blocks)
-            s_path, _ = self.A_star(maze, defaultdict(int), start, goal, known_blocks)
-            if not path:
-                return None, None, None
+            status, path, expanded = self.A_star(maze, cur.position, goal_t, known_blocks, ADAPTIVE_HEURISTIC_DICT=adaptive_dict)
+            if status == SEARCH_FAILED:
+                return None, None
 
-            for i, node_t in enumerate(path[:-1]):
-                g_s_goal = len(s_path)
-                new_h = g_s_goal - len(path)
-                additional_costs[node_t] = new_h
+            _, start_goal_path, _ = self.A_star(maze, start_t, goal_t, known_blocks, ADAPTIVE_HEURISTIC_DICT=adaptive_dict)
+            for i, node in enumerate(path):
+                start_s_path = len(path) - i - 1
+                adaptive_dict[node] = len(start_goal_path) - start_s_path
 
-            expanded_nodes += cur_expanded
+            expanded_nodes += expanded
 
             i = 1
-            while i < len(path) and not maze[path[i]].is_blocked():
+            while i < len(path) and not path[i].is_blocked():
                 cur = path[i]
                 path_taken.append(cur)
                 i += 1
 
-            if i < len(path) and maze[path[i]].is_blocked():
+            if i < len(path) and path[i].is_blocked():
                 known_blocks.add(path[i])
 
-        end_t = time.perf_counter()
-        return path_taken, expanded_nodes, end_t - start_t
+        return path_taken, expanded_nodes
