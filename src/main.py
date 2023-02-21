@@ -1,12 +1,11 @@
 import os
 from graph_util import *
 from search import *
-import sys, time, pygame
+import sys, time, pygame, random
 
 # main file
 sys.setrecursionlimit(12000)
 SCREEN_HEIGHT, SCREEN_WIDTH = 800, 800
-
 
 def run(screen, path, block_size):
     i = 0
@@ -51,6 +50,7 @@ def draw_grid(g, block_size, screen):
 
 def get_statistics():
     test_start = time.perf_counter()
+
     # ran on 50 graphs of dimensions 101x101
     s, m = Search(), Maze()
     test_graphs = m.get_testing_graphs(count=50)
@@ -58,9 +58,14 @@ def get_statistics():
     print("Generated graphs!")
 
     r_time, r_expanded = 0, 0
+    a_time, a_expanded = 0, 0
+
     for graph in test_graphs:
+        print(f"On graph: {graph.get_label()}/50", end="\r")
+        c_start, c_end = (0, 0), (100, 100)
+        # REPEATED A STAR
         start_time = time.perf_counter()
-        cur_path, num_expanded = s.repeated_A_star(graph, (0, 0), (19, 19))
+        cur_path, num_expanded = s.repeated_A_star(graph, c_start, c_end)
 
         if not cur_path: # if no path exists, don't use for statistics
             count -= 1
@@ -69,23 +74,19 @@ def get_statistics():
         end_time = time.perf_counter()
         r_time += (end_time - start_time)
         r_expanded += num_expanded
-    r_time, r_expanded = r_time/count, r_expanded/count
 
-    if r_time == 0:
-        raise Exception("None of the graphs generated had a viable path.")
-
-    a_time, a_expanded = 0, 0
-    for graph in test_graphs:
+        # ADAPTIVE A STAR
         start_time = time.perf_counter()
-        cur_path, num_expanded = s.adaptive_A_star(graph, (0, 0), (19, 19))
-
-        if not cur_path: # if no path exists, don't use for statistics
-            continue
-
+        cur_path, num_expanded = s.adaptive_A_star(graph, c_start, c_end)
         end_time = time.perf_counter()
         a_time += (end_time - start_time)
         a_expanded += num_expanded
+
+    r_time, r_expanded = r_time/count, r_expanded/count
     a_time, a_expanded = a_time/count, a_expanded/count
+
+    if r_time == 0:
+        raise Exception("None of the graphs generated had a viable path.")
 
     print(f"Average time taken for repeated A star: {r_time}, with average number of nodes expanded: {r_expanded: .2f}")
     print(f"Average time taken for adaptive A star: {a_time}, with average number of nodes expanded: {a_expanded: .2f}")
@@ -98,6 +99,7 @@ def get_statistics():
 
 if __name__ == "__main__":
     get_statistics()
+
     """
     OFFSET = 1
     pygame.init()
