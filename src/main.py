@@ -48,27 +48,27 @@ def draw_grid(g, block_size, screen):
         pygame.draw.line(surface=screen, color=(255, 255, 255), start_pos=(0, (SCREEN_HEIGHT/(g.get_dim())) * i),
                          end_pos=(SCREEN_WIDTH, (SCREEN_HEIGHT/(g.get_dim())) * i), width=1)
 
-def get_statistics():
+def repeated_vs_adaptive_statistics(graph_count=50):
+    count = graph_count
     test_start = time.perf_counter()
 
     # ran on 50 graphs of dimensions 101x101
     s, m = Search(), Maze()
-    test_graphs = m.get_testing_graphs(count=50)
-    count = 50
+    test_graphs = m.get_testing_graphs(count=graph_count)
     print("Generated graphs!")
 
     r_time, r_expanded = 0, 0
     a_time, a_expanded = 0, 0
 
     for graph in test_graphs:
-        print(f"On graph: {graph.get_label()}/50", end="\r")
+        print(f"{graph.get_label()/graph_count: .2%} completed.", end="\r")
         c_start, c_end = (0, 0), (100, 100)
         # REPEATED A STAR
         start_time = time.perf_counter()
         cur_path, num_expanded = s.repeated_A_star(graph, c_start, c_end)
 
         if not cur_path: # if no path exists, don't use for statistics
-            count -= 1
+            graph_count -= 1
             continue
 
         end_time = time.perf_counter()
@@ -88,17 +88,65 @@ def get_statistics():
     if r_time == 0:
         raise Exception("None of the graphs generated had a viable path.")
 
-    print(f"Average time taken for repeated A star: {r_time}, with average number of nodes expanded: {r_expanded: .2f}")
-    print(f"Average time taken for adaptive A star: {a_time}, with average number of nodes expanded: {a_expanded: .2f}")
+    print(f"Average time taken for repeated A star: {r_time} seconds, with average number of nodes expanded: {r_expanded: .2f}")
+    print(f"Average time taken for adaptive A star: {a_time} seconds, with average number of nodes expanded: {a_expanded: .2f}")
 
     diff_time, diff_expanded = (r_time - a_time)/r_time, (r_expanded - a_expanded)/r_expanded
     print(f"On average, adaptive A star took {diff_time: .2%} less time, with {diff_expanded: .2%} less nodes expanded.")
     test_end = time.perf_counter()
     print(f"Testing took {test_end - test_start : .4f} seconds.")
 
+def forward_vs_backward_statistics(graph_count=50):
+    count = graph_count
+    test_start = time.perf_counter()
+
+    # ran on 50 graphs of dimensions 101x101
+    s, m = Search(), Maze()
+    test_graphs = m.get_testing_graphs(count=graph_count)
+    print("Generated graphs!")
+
+    f_time, f_expanded = 0, 0
+    b_time, b_expanded = 0, 0
+
+    for graph in test_graphs:
+        print(f"{graph.get_label()/count: .2%} completed.", end="\r")
+        c_start, c_end = (0, 0), (100, 100)
+        # REPEATED A STAR
+        start_time = time.perf_counter()
+        cur_path, num_expanded = s.repeated_A_star(graph, c_start, c_end)
+
+        if not cur_path: # if no path exists, don't use for statistics
+            graph_count -= 1
+            continue
+
+        end_time = time.perf_counter()
+        f_time += (end_time - start_time)
+        f_expanded += num_expanded
+
+        # ADAPTIVE A STAR
+        start_time = time.perf_counter()
+        cur_path, num_expanded = s.adaptive_A_star(graph, c_start, c_end)
+        end_time = time.perf_counter()
+        b_time += (end_time - start_time)
+        b_expanded += num_expanded
+
+    f_time, f_expanded = f_time/count, f_expanded/count
+    b_time, b_expanded = b_time/count, b_expanded/count
+
+    if f_time == 0:
+        raise Exception("None of the graphs generated had a viable path.")
+
+    print(f"Average time taken for repeated forward A star: {f_time} seconds, with average number of nodes expanded: {f_expanded: .2f}")
+    print(f"Average time taken for repeated backwards A star: {b_time} seconds, with average number of nodes expanded: {b_expanded: .2f}")
+
+    diff_time, diff_expanded = (f_time - b_time)/f_time, (f_expanded - b_expanded)/f_expanded
+    print(f"On average, repeated backwards A star took {diff_time: .2%} less time, with {diff_expanded: .2%} less nodes expanded.")
+    test_end = time.perf_counter()
+    print(f"Testing took {test_end - test_start : .4f} seconds.")    
 
 if __name__ == "__main__":
-    get_statistics()
+    # repeated_vs_adaptive_statistics(2)
+    forward_vs_backward_statistics()
 
     """
     OFFSET = 1

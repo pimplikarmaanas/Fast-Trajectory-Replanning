@@ -177,5 +177,5 @@ class Maze:
 
         end_t = time.perf_counter()
         time_taken = end_t - start_t
-        print(f"All graphs generated\nTotal time taken: {time_taken}")
+        print(f"All graphs generated in {time_taken} seconds.")
         return graphs
