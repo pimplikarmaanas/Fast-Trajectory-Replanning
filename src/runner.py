@@ -8,8 +8,8 @@ SCREEN_HEIGHT, SCREEN_WIDTH = 800, 800
 
 # modes for demo and visualization
 REPEATED_FORWARD_A_STAR = 0
-REPEATED_BACKWARD_A_STAR = 0
-ADAPTIVE_A_STAR = 0
+REPEATED_BACKWARD_A_STAR = 1
+ADAPTIVE_A_STAR = 2
 
 def run(screen, path, block_size):
     i = 0
@@ -61,12 +61,12 @@ def generate_valid_graph(label:int, dim=TEST_GRAPH_DIM):
     count = 1
     path, _ = s.adaptive_A_star(g, (0, 0), (dim-1, dim-1))
 
-    while not path and count < 5:
+    while not path and count < 10:
         g, time = m.generate_graph(label, dim)
         total_time += time
         path, _ = s.adaptive_A_star(g, (0, 0), (dim-1, dim-1))
 
-    if count == 5:
+    if count == 10:
         return None
     
     return g
@@ -173,7 +173,7 @@ def forward_vs_backward_statistics(graph_count=50):
     test_end = time.perf_counter()
     print(f"Testing took {test_end - test_start : .4f} seconds.")    
 
-def demo(mode=ADAPTIVE_A_STAR):
+def run_demo(mode=ADAPTIVE_A_STAR):
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH+1, SCREEN_HEIGHT+1))
 
