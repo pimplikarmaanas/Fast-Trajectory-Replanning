@@ -87,15 +87,15 @@ def get_statistics():
         a_expanded += num_expanded
     a_time, a_expanded = a_time/50, a_expanded/50
 
-    print(f"Average time taken for repeated A star: {r_time: .2f}, with average number of nodes expanded: {r_expanded: .2f}")
-    print(f"Average time taken for adaptive A star: {a_time: .2f}, with average number of nodes expanded: {a_expanded: .2f}")
+    print(f"Average time taken for repeated A star: {r_time}, with average number of nodes expanded: {r_expanded: .2f}")
+    print(f"Average time taken for adaptive A star: {a_time}, with average number of nodes expanded: {a_expanded: .2f}")
 
     diff_time, diff_expanded = (r_time - a_time)/r_time, (r_expanded - a_expanded)/r_expanded
     print(f"On average, adaptive A star took {diff_time: .2%} less time, with {diff_expanded: .2%} less nodes expanded.")
 
 if __name__ == "__main__":
     get_statistics()
-    '''
+    """
     OFFSET = 1
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH+OFFSET, SCREEN_HEIGHT+OFFSET))
@@ -113,12 +113,17 @@ if __name__ == "__main__":
     g.set_cell_status((4, 3), True)
     print(g)
 
+    g, _ = m.generate_graph(1, dim=10)
+
     BLOCK_SIZE = SCREEN_WIDTH/g.get_dim()
     head = pygame.image.load(os.path.join('./models/', 'head.png'))
     head = pygame.transform.scale(head, (BLOCK_SIZE, BLOCK_SIZE))
 
-    path, _ = s.adaptive_A_star(g, (4, 2), (4, 4))
-    draw_grid(g, BLOCK_SIZE, screen)
-    run(screen, path, BLOCK_SIZE)
-    '''
+    r_path, _ = s.repeated_A_star(g, (0, 0), (9, 9))
+    print(r_path)
+    a_path, _ = s.adaptive_A_star(g, (0, 0), (9, 9))
+    print(a_path)
 
+    draw_grid(g, BLOCK_SIZE, screen)
+    run(screen, a_path, BLOCK_SIZE)
+    """

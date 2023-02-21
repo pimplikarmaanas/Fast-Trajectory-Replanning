@@ -5,6 +5,7 @@ import heapq
 import time
 
 ADAPTIVE_HEURISTIC_DICT = "adaptive_h"
+RETURN_CLOSED_LIST = "get_closed_list"
 SEARCH_SUCCESSFUL, SEARCH_FAILED = 1, 0
 
 class Search:
@@ -28,29 +29,22 @@ class Search:
 
         return res
 
-    def __heuristic(self, start: Cell, end: Cell, **kwargs):
-        adaptive_h = kwargs.get(ADAPTIVE_HEURISTIC_DICT, None)
-        if adaptive_h:
-            return adaptive_h[start]
-
+    def __heuristic(self, start: Cell, end: Cell):
         # manhattan distance
         x1, y1 = start.position[0], start.position[1]
         x2, y2 = end.position[0], end.position[1]
 
         return abs(x1-x2) + abs(y1-y2)
 
-    def __compute_f(self, cur: Cell, goal: Cell, **kwargs):
-        adaptive_h = kwargs.get(ADAPTIVE_HEURISTIC_DICT, None)
-        if adaptive_h:
-            cur.set_h(self.__heuristic(cur, goal, ADAPTIVE_HEURISTIC_DICT=adaptive_h))
-            return cur.get_g() + cur.get_h()
-
-        cur.set_h(self.__heuristic(cur, goal))
+    def __compute_f(self, cur: Cell, goal: Cell):
+        if cur.get_h() < 0:
+            cur.set_h(self.__heuristic(cur, goal))
+        
         return cur.get_g() + cur.get_h()
 
-    def A_star(self, maze: Graph, start_t: tuple, goal_t: tuple, known_blocks: set, **kwargs):
-        start, goal = Cell(position=start_t), Cell(position=goal_t)
-        adaptive_h = kwargs.get(ADAPTIVE_HEURISTIC_DICT, None)
+    def A_star(self, maze: Graph, start_t: tuple, goal_t: tuple, known_blocks: set):
+        start, goal = maze[start_t], maze[goal_t]
+        parents = {}
 
         # start and goal are tuples (i, j)
         open_list, closed_list = [start], known_blocks.copy()
@@ -67,24 +61,21 @@ class Search:
 
                 while cur_node:
                     path.append(cur_node)
-                    cur_node = cur_node.get_parent()
+                    cur_node = parents.get(cur_node, None)
 
-                # backtrack
-                return SEARCH_SUCCESSFUL, path[::-1], expanded_nodes
+                return path[::-1], expanded_nodes, closed_list
 
             neighbors = self.__get_neighbors(maze, cur_node)
 
             for child in neighbors:
-                child.set_g(cur_node.get_g() + 1)
-                if adaptive_h:
-                    child.set_f(self.__compute_f(child, goal, ADAPTIVE_HEURISTIC_DICT=adaptive_h))
-                else:
-                    child.set_f(self.__compute_f(child, goal))
-
                 if child in closed_list:
                     continue
+                
+                child.set_g(cur_node.get_g() + 1)
 
-                child.set_parent(cur_node)
+                child.set_f(self.__compute_f(child, goal))
+
+                parents[child] = cur_node
 
                 if child in open_list:
                     index = open_list.index(child)
@@ -95,7 +86,7 @@ class Search:
 
                 heapq.heappush(open_list, child)
 
-        return SEARCH_FAILED, None, 0
+        return None, 0, None
 
     def repeated_A_star(self, maze: Graph, start_t: tuple, goal_t: tuple):
         start, goal = maze[start_t], maze[goal_t]
@@ -106,8 +97,8 @@ class Search:
         expanded_nodes = 0
 
         while cur != goal:
-            status, path, cur_expanded = self.A_star(maze, cur.position, goal_t, known_blocks)
-            if status == SEARCH_FAILED:
+            path, cur_expanded, c_list = self.A_star(maze, cur.position, goal_t, known_blocks)
+            if not path:
                 return None, None
 
             expanded_nodes += cur_expanded
@@ -124,7 +115,6 @@ class Search:
         return path_taken, expanded_nodes
 
     def adaptive_A_star(self, maze: Graph, start_t: tuple, goal_t: tuple):
-        adaptive_dict = defaultdict(int)
         start, goal = maze[start_t], maze[goal_t]
 
         cur = start
@@ -133,14 +123,12 @@ class Search:
         expanded_nodes = 0
 
         while cur != goal:
-            status, path, expanded = self.A_star(maze, cur.position, goal_t, known_blocks, ADAPTIVE_HEURISTIC_DICT=adaptive_dict)
-            if status == SEARCH_FAILED:
+            path, expanded, closed_list = self.A_star(maze, cur.position, goal_t, known_blocks)
+            if not path:
                 return None, None
 
-            _, start_goal_path, _ = self.A_star(maze, start_t, goal_t, known_blocks, ADAPTIVE_HEURISTIC_DICT=adaptive_dict)
-            for i, node in enumerate(path):
-                start_s_path = len(path) - i - 1
-                adaptive_dict[node] = len(start_goal_path) - start_s_path
+            for i, node in enumerate(closed_list):
+                node.set_h(len(path) - node.get_g())
 
             expanded_nodes += expanded
 
