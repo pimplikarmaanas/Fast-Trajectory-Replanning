@@ -138,8 +138,7 @@ class Maze:
             self.__flood_fill(g, c, visited)
 
     # returns a randomly initialized graph with the passed in label and optional argument "dim"
-    def generate_graph(self, label: int, **kwargs):
-        dim = kwargs.get("dim", TEST_GRAPH_DIM)
+    def generate_graph(self, label: int, dim=TEST_GRAPH_DIM):
         g = Graph(label, dim)
 
         start_t = time.perf_counter()
@@ -165,7 +164,7 @@ class Maze:
             available_cells = list(set(available_cells) - visited)
 
         end_t = time.perf_counter()
-        return g, end_t - start_t
+        return g, end_t - start_t            
 
     def get_testing_graphs(self, *, count: int):
         graphs = []

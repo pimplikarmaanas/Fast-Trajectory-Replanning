@@ -97,7 +97,7 @@ class Search:
         expanded_nodes = 0
 
         while cur != goal:
-            path, cur_expanded, c_list = self.A_star(maze, cur.position, goal_t, known_blocks)
+            path, cur_expanded, _ = self.A_star(maze, cur.position, goal_t, known_blocks)
             if not path:
                 return None, None
 
@@ -115,30 +115,12 @@ class Search:
         return path_taken, expanded_nodes
 
     def repeated_backwards_A_star(self, maze: Graph, start_t: tuple, goal_t: tuple):
-        start, goal = maze[start_t], maze[goal_t]
+        path, nodes = self.repeated_A_star(maze, goal_t, start_t)
 
-        cur = start
-        path_taken = [start]
-        known_blocks = set()
-        expanded_nodes = 0
+        if not path:
+            return None, None
 
-        while cur != goal:
-            path, cur_expanded, c_list = self.A_star(maze, cur.position, goal_t, known_blocks)
-            if not path:
-                return None, None
-
-            expanded_nodes += cur_expanded
-
-            i = 1
-            while i < len(path) and not path[i].is_blocked():
-                cur = path[i]
-                path_taken.append(cur)
-                i += 1
-
-            if i < len(path) and path[i].is_blocked():
-                known_blocks.add(path[i])
-
-        return path_taken[::-1], expanded_nodes
+        return path[::-1], nodes
 
     def adaptive_A_star(self, maze: Graph, start_t: tuple, goal_t: tuple):
         start, goal = maze[start_t], maze[goal_t]
@@ -150,6 +132,7 @@ class Search:
 
         while cur != goal:
             path, expanded, closed_list = self.A_star(maze, cur.position, goal_t, known_blocks)
+
             if not path:
                 return None, None
 
