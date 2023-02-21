@@ -50,32 +50,32 @@ def draw_grid(g, block_size, screen):
                          end_pos=(SCREEN_WIDTH, (SCREEN_HEIGHT/(g.get_dim())) * i), width=1)
 
 def get_statistics():
+    test_start = time.perf_counter()
     # ran on 50 graphs of dimensions 101x101
     s, m = Search(), Maze()
-    test_graphs = m.get_testing_graphs(count=5)
+    test_graphs = m.get_testing_graphs(count=50)
+    count = 50
     print("Generated graphs!")
 
     r_time, r_expanded = 0, 0
     for graph in test_graphs:
-        print("Checking repeated")
         start_time = time.perf_counter()
         cur_path, num_expanded = s.repeated_A_star(graph, (0, 0), (19, 19))
 
         if not cur_path: # if no path exists, don't use for statistics
+            count -= 1
             continue
 
         end_time = time.perf_counter()
         r_time += (end_time - start_time)
         r_expanded += num_expanded
-    r_time, r_expanded = r_time/50, r_expanded/50
+    r_time, r_expanded = r_time/count, r_expanded/count
 
     if r_time == 0:
         raise Exception("None of the graphs generated had a viable path.")
 
     a_time, a_expanded = 0, 0
     for graph in test_graphs:
-        print("Checking adaptive")
-
         start_time = time.perf_counter()
         cur_path, num_expanded = s.adaptive_A_star(graph, (0, 0), (19, 19))
 
@@ -85,13 +85,16 @@ def get_statistics():
         end_time = time.perf_counter()
         a_time += (end_time - start_time)
         a_expanded += num_expanded
-    a_time, a_expanded = a_time/50, a_expanded/50
+    a_time, a_expanded = a_time/count, a_expanded/count
 
     print(f"Average time taken for repeated A star: {r_time}, with average number of nodes expanded: {r_expanded: .2f}")
     print(f"Average time taken for adaptive A star: {a_time}, with average number of nodes expanded: {a_expanded: .2f}")
 
     diff_time, diff_expanded = (r_time - a_time)/r_time, (r_expanded - a_expanded)/r_expanded
     print(f"On average, adaptive A star took {diff_time: .2%} less time, with {diff_expanded: .2%} less nodes expanded.")
+    test_end = time.perf_counter()
+    print(f"Testing took {test_end - test_start : .4f} seconds.")
+
 
 if __name__ == "__main__":
     get_statistics()

@@ -133,7 +133,7 @@ class Search:
             expanded_nodes += expanded
 
             i = 1
-            while i < len(path) and not path[i].is_blocked():
+            while i < len(path) and not path[i].is_blocked():                
                 cur = path[i]
                 path_taken.append(cur)
                 i += 1
