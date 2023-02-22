@@ -25,7 +25,7 @@ class Cell:
 
     def __lt__(self, other):
         if self.__f == other.get_f():
-            return self.__g < other.get_g()
+            return self.__g > other.get_g()
         return self.__f < other.get_f()
 
     def __hash__(self):

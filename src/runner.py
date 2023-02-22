@@ -75,7 +75,7 @@ def repeated_vs_adaptive_statistics(graph_count=50):
     count = graph_count
     test_start = time.perf_counter()
 
-    # ran on 50 graphs of dimensions 101x101
+    # ran on graphs of dimensions 101x101
     s, m = Search(), Maze()
     test_graphs = m.get_testing_graphs(count=graph_count)
     print("Generated graphs!")
@@ -84,7 +84,7 @@ def repeated_vs_adaptive_statistics(graph_count=50):
     a_time, a_expanded = 0, 0
 
     for graph in test_graphs:
-        print(f"{graph.get_label()/graph_count: .2%} completed.", end="\r")
+        print(f"{graph.get_label()/count: .2%} completed.", end="\r")
         c_start, c_end = (0, 0), (100, 100)
         # REPEATED A STAR
         start_time = time.perf_counter()

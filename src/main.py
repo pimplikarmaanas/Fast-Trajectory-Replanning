@@ -6,7 +6,7 @@ REPEATED_BACKWARD_A_STAR = 1
 ADAPTIVE_A_STAR = 2
 
 def main():
-    runner.run_search(mode=ADAPTIVE_A_STAR)
+    runner.repeated_vs_adaptive_statistics(graph_count=50)
 
 if __name__ == "__main__":
     main()
